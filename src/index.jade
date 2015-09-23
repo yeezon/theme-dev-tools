@@ -1,0 +1,114 @@
+doctype html
+html(lang='zh-CN')
+  head
+    meta(charset='UTF-8')
+    title 主题开发工具 - 友好速搭
+    link(rel='stylesheet' href='assets/ico.css')
+    link(rel='stylesheet' href='assets/ui.css')
+    script(src='assets/vendor/vue.js')
+  body#auto
+    section.header
+      section.app_top#app_top
+        button.app_top_exit.ico.ico-times(v-on='click: exit')
+        button.app_top_hide.ico.ico-minus(v-on='click: hide')
+      section.nav#nav
+        section.tags
+          button.tags-tag.ico.ico-inbox(title='All', v-on='click: all', v-class='run: run == "all", active: active == "all"') {{tags.all.name}}
+          button.tags-tag.ico.ico-star.run(title='Star', v-on='click: star', v-class='run: run == "star", active: active == "star"') {{tags.star.name}}
+          button.tags-tag.ico.ico-briefcase(title='Manage', v-on='click: manage', v-class='run: run == "manage", active: active == "manage"') {{tags.manage.name}}
+          button.tags-tag.ico.ico-flask.active(title='Dev', v-on='click: dev', v-class='run: run == "dev", active: active == "dev"') {{tags.dev.name}}
+        button.app_set_btn#app_set_btn.ico.ico-cog(title='App Set', v-on='click: appSet')
+    section.cont
+      section.tips#tips
+        section.tips-tip(v-repeat='tip: tips')
+          span.tips-tip-cont(title='{{tip.msg}}') {{ tip.msg }}
+          button.tips-tip-btn.ico.ico-times(title='Close', v-on='click: del(tip)')
+      section.items#items
+        section.items-item(v-repeat='item: items',v-show='item.tag == tag || tag == "all"', v-on='mouseout: out, click: click(item)', class='{{ lock == item.path ? "loading" : ""}} {{ runMark == item.path ? "run" : "" }} {{ active == item.path ? "active" : "" }}')
+          span.items-item-name(title='{{ item.name }}') {{ item.name }}
+          section.items-item-mid
+            a.ico.ico-steam(title='F5', v-on='click: open_uri("http://localhost:" + env.SERVICES_PORT, $event)', v-class='disabled: runMark != item.path', href='javascript:void(0);', target='_blank')
+            a.ico.ico-folder-open(title='Dir', v-on='click: open_dir(item.path, $event)', href='javascript:void(0);', target='_blank')
+            a.ico.ico-cloud(title='Cloud', v-on='click: open_uri("http://" + item.conf.store + "/admin", $event)', v-class='disabled: runMark != item.path', href='javascript:void(0);', target='_blank')
+            a.ico.ico-home(title='Site', v-on='click: open_uri("http://" + item.conf.store, $event)', href='javascript:void(0);', target='_blank')
+          section.items-item-right
+            button.ico.ico-minus-circle(title='Delete', v-on='click: del(item)', class='{{ item.path == delMark ? "active" : "" }}')
+            button.ico.ico-wrench(title='Setting', v-on='click: itemSet(item)')
+            button.ico.ico-play(title='Run', v-on='click: run(item)')
+            button.ico.ico-dot-circle-o(title='Stop', v-on='click: stop(item)')
+            button.ico.ico-spinner.items-item-loader(title='Loading')
+      section.drop#drop(class='{{ active ? "active" : "" }} {{ done ? "done" : "" }}')
+        section.drop-tip
+          span.ico.ico-cloud-upload
+          br
+          span Drop folder here
+        section.drop-done
+          span.ico.ico-check
+          br
+          span Add a success
+    section.footer
+      section.logs#logs(v-class='active: active')
+        section.logs-cont
+          p(v-repeat='log: logs')
+            span(v-class='yellow: log.type == "Warning", red: log.type == "Error", green: log.type == "Success", blue: log.type == "Info"') {{log.type}}&nbsp;
+            span {{log.msg}}
+        section.logs-cont_sheet(title='{{log.msg}}')
+          p
+            span(v-class='yellow: log.type == "Warning", red: log.type == "Error", green: log.type == "Success", blue: log.type == "Info"') {{log.type}}&nbsp;
+            span {{log.msg}}
+        button.logs-btn#open_logs.ico.ico-bug(title='Open Logs', v-on='click: open')
+    section.popup#popup(class='{{ isAppSet && !isItemSet ? "active-app_set" : "" }} {{ !isAppSet && isItemSet ? "active-item_set" : "" }}')
+      section.popup-cont--inner
+        section.popup-cont.app_set
+          button.popup-cont-close#app_set_close.ico.ico-times(v-on='click: isAppSet = !isAppSet')
+          section.popup-cont-item
+            h2.popup-cont-item-title 应用数据
+            section.dir_ipt
+              input.dir_ipt-path(disabled type='text', value='{{ env.DATA_DIR }}', title='{{ env.DATA_DIR }}', placeholder='Folder Path')
+              button.dir_ipt-btn.ico.ico-folder-open(v-on='click: open_dir(env.DATA_DIR, $event)')
+              input.dir_ipt-ipt#app_data_dir_ipt(type='file')
+          section.popup-cont-item
+            h2.popup-cont-item-title 店铺数据
+            section.store_data(v-class='active-add : addStore || upStores.active, none : noneStore, update : upStores.active')
+              section.store_data-add(v-class='loading: loadingStore, err: errStore')
+                section.store_data-add-ipt
+                  input.store_data-add-ipt-name(disabled type='text', value='{{upStores.name}}', placeholder='Stores Name')
+                  input(type='text', v-on='focus: errStore = false' v-model='upStores.app_key', placeholder='API Key')
+                  input(type='text', v-on='focus: errStore = false' v-model='upStores.app_secret', placeholder='Shared Secret')
+                  section.store_data-add-ipt-btn
+                    img.store_data-add-loader(src='assets/loader.svg')
+                    button.store_data-add-close#store_data-close.ico.ico-times-circle(v-on='click: close_add')
+                    button.store_data-add-add#store_data-add.ico.ico-check-circle(v-on='click: add_store')
+                    span.store_data-add-err.ico.ico-minus-circle
+              section.store_data-item(v-repeat='item: stores', v-on='mouseout: out')
+                span.store_data-item-name {{ item.name }}
+                section.store_data-item-btn
+                  button.store_data-item-btn-del.ico.ico-minus-circle(v-on='click: del_store(item)', class='{{ item.domain == delMark ? "active" : "" }}')
+                  button.store_data-item-btn-set.ico.ico-info-circle(v-on='click: open_up_store(item)')
+            section.store_data-open_add
+              button.store_data-open_add-btn.ico.ico-plus-circle(v-on='click: open_add_store')
+        section.popup-cont.item_set
+          button.popup-cont-close#item_set_close.ico.ico-times(v-on='click: isItemSet = !isItemSet')
+          section.popup-cont-item.item_dir
+            h2.popup-cont-item-title 项目文件
+            section.dir_ipt
+              input.dir_ipt-path(disabled type='text', value='{{item.path}}', placeholder='Folder Path')
+              button.dir_ipt-btn.ico.ico-folder-open(v-on='click: open_dir(item.path, $event)')
+              input.dir_ipt-ipt#item_dir_ipt(type='file')
+          section.popup-cont-item.item_bind
+            h2.popup-cont-item-title 项目绑定
+            section.select#store_slc(v-on='mouseleave: out_slc_store', v-class='active: itemState.slcStoreActive')
+              .bingo(v-on='click: open_slc_store') {{ noneStore? '请添先加店铺' : (itemState.slcStoreName || '请选择店铺') }}
+              .options
+                .option(v-repeat='store: stores', v-on='click: slc_store(store)', v-class='selected: item.conf.store == store.domain, disabled: false') {{store.name}}
+            section.select.theme_slc(v-on='mouseleave: out_slc_theme', v-class='active: itemState.slcThemeActive, show: itemState.slcThemeShow')
+              .bingo(v-on='click: itemState.slcThemeActive = !itemState.slcThemeActive') {{ itemState.slcThemeName || '请选择主题' }}
+              .options
+                .option(v-repeat='theme: itemState.themes', v-on='click: slc_theme(theme)', v-class='selected: item.conf.theme == theme.id, disabled: false') {{theme.name}}
+            section.item_set-info(v-class='err: itemState.err, loading: itemState.loading, set: itemState.set')
+              button.item_set-info-yes.ico.ico-check-circle(v-on='click: up_slc_item')
+              img.item_set-info-loader(src='assets/loader.svg')
+              span.item_set-info-err.ico.ico-minus-circle
+    script(src='assets/ui.js')
+
+

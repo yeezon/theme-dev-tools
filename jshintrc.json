@@ -1,0 +1,32 @@
+{
+  "sub"     : true  ,
+  "regexp"  : true  ,
+  "asi"     : true  ,
+  "browser" : true  ,
+  "loopfunc": true  ,
+  "expr"    : true  ,
+  "node"    : true  ,
+  "es5"     : false ,    // 一般是 true
+  "esnext"  : true  ,
+  "bitwise" : true  ,
+  "curly"   : true  ,
+  "latedef" : false ,
+  "expr"    : true  ,
+  "eqeqeq"  : false ,
+  "eqnull"  : false ,
+  "newcap"  : true  ,
+  "noarg"   : true  ,
+  "undef"   : true  ,
+  "proto"   : true  ,
+  "strict"  : false ,
+  "-W124"   : false , // A generator function shall contain a yield statement
+  "-W014"   : false , // Bad line breaking before ? (in tertiary operator)
+  "-W065"   : false , // Missing radix parameter to parseInt (defaults to 10)
+  "-W069"   : false , // Literal accessor is better written in dot notation
+  "globals" : {
+    "describe"  : true ,
+    "it"        : true ,
+    "beforeEach": true ,
+    "afterEach" : true
+  }
+}

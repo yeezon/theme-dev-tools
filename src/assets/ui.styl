@@ -1,0 +1,723 @@
+
+// 动画
+
+@keyframes block_opc
+  0%
+    opacity 0
+  100%
+    opacity 1
+
+@keyframes opc
+  from
+    opacity 1
+  to
+    opacity 0
+
+html
+  background rgba(0, 0, 0, 0)
+  height 100%
+
+body
+  padding 110px 0 32px
+  box-sizing border-box
+  height 100%
+  margin 0
+  border-radius 5px
+  overflow hidden
+  background #e5eff4
+  font-size 14px
+  font-family "Microsoft YaHei", "Lantinghei", "Lucida Grande", Helvetica, Arial, sans-serif;
+
+button
+  outline none
+  background none
+  border 0
+  padding 0
+  vertical-align middle
+  transition all ease .2s
+  &:hover
+    cursor pointer
+
+input
+  outline none
+  box-sizing border-box
+  &::-webkit-input-placeholder
+    color rgba(#8aa0ad, .45)
+
+.disabled
+  cursor not-allowed!important
+
+.clearfix
+  &:after
+    content "."
+    display block
+    height 0
+    clear both
+    visibility hidden
+
+.header
+  background #30b0f2
+  margin -110px 0 0
+  -webkit-user-select none
+  -webkit-app-region drag
+
+button
+  -webkit-app-region no-drag
+  
+
+.cont
+  height 100%
+  overflow auto
+  &::-webkit-scrollbar
+    width 4px
+    background rgba(0, 0, 0, 0)
+  &::-webkit-scrollbar-track
+    background rgba(0, 0, 0, 0)
+  &::-webkit-scrollbar-track-piece
+    background rgba(0, 0, 0, 0)
+  &::-webkit-scrollbar-thumb
+    background rgba(123, 123, 123, .2)
+
+.app_top
+  padding 12px 0 0 12px
+  line-height 1
+  font-size 0
+  button
+    color #fff
+    font-size 13px
+    line-height 1
+    box-sizing content-box
+    border-radius 50%
+    margin 0 7px 0 0
+    &:first-child
+      font-size 14px
+    &:hover
+      color rgba(#fff, .5)
+    &:first-child:hover
+      color #f28a96
+
+.nav
+  position relative
+  padding 26px 24px 8px
+
+.tags
+  height 50px
+  line-height 50px
+  text-align left
+  &-tag
+    display inline-block
+    font-size 14px
+    margin 0 15px 0 0
+    color rgba(#fff, .5)
+    font-weight bold
+    position relative
+    &.ico::before
+      color #1f92cd
+      font-size 20px
+      font-weight normal
+      margin 0 6px 0 0
+      position relative
+      top 1px
+      transition all ease .2s
+    &.ico-briefcase
+      position relative
+      bottom 1px
+      &::before
+        top 3px
+    &:hover,
+    &.active
+      color #fff
+      &.ico::before
+        color #fff
+    &.run
+      &::after
+        content ''
+        display inline-block
+        width 5px
+        height 5px
+        background #a6d850
+        border-radius 50%
+        position absolute
+        margin 0 0 0 -2.5px
+        bottom -9px
+        left 50%
+
+.app_set_btn
+  position absolute
+  bottom 22px
+  right 22px
+  height auto
+  line-height 1
+  color #fff
+  font-size 20px
+  &:hover
+    color rgba(#fff, .5)
+
+.tips
+  &-tip
+    height 32px
+    line-height 32px
+    font-size 12px
+    padding 0 24px
+    position relative
+    background #f28a96
+    color #fff
+    &-cont
+      display inline-block
+      white-space nowrap
+      overflow hidden
+      text-overflow ellipsis
+      width 100%
+      padding 0 24px 0 0
+      box-sizing border-box
+    &-btn
+      color #fff
+      position absolute
+      right 26px
+      top 10px
+
+.items
+  &-item
+    position relative
+    padding 18px 24px
+    background #fafbfc
+    font-size 0
+    line-height 1.2
+    &:nth-child(even)
+      background #f2f6f8
+    button,
+    a
+      color #b4c7d2
+      font-size 15px
+      margin 0 0 0 10px
+      text-decoration initial
+      &.ico-minus-circle:hover
+        color #f28a96
+      &.ico-play:hover
+        color #a6d850
+      &.ico-home
+        font-size 17px
+      &.ico-dot-circle-o
+        font-size 17px
+      &:hover
+        color #8aa0ad
+      &.ico-steam,
+      &.ico-steam:hover,
+      &.ico-cloud,
+      &.ico-cloud:hover
+        color rgba(#b4c7d2, .5)
+        cursor auto
+      &.ico-dot-circle-o,
+      &.ico-wrench
+        display none
+      &.ico-minus-circle
+        display none
+        &.active:hover
+          color #a6d850
+        &.active::before
+          content '\f058'
+    &-name
+      font-size 14px
+      color #8aa0ad
+      display inline-block
+      width 120px
+      overflow hidden
+      white-space nowrap
+      text-overflow ellipsis
+    &-mid
+      position absolute
+      margin auto
+      top 0
+      bottom 0
+      left 0
+      right 0
+      width 100px
+      height 20px
+      line-height 20px
+      text-align center
+      display none
+      button:first-child,
+      a:first-child
+        margin 0
+    &-right
+      position absolute
+      margin auto
+      top 0
+      bottom 0
+      right 24px
+      width auto
+      height 20px
+      line-height 20px
+    &:hover,
+    &.active
+      a,
+      button
+        &.ico-minus-circle,
+        &.ico-wrench
+          display inline-block
+      .items-item-mid
+        display block
+    &.run
+      background #a6d850
+      .items-item-name
+        color #fff
+      a
+        color #fff
+        &:hover
+          color #8aa0ad
+      button
+        color #fff
+        &:hover
+          color #8aa0ad
+        &.ico-play,
+        &.ico-minus-circle,
+        &.ico-wrench
+          display none
+        &.ico-dot-circle-o
+          display inline-block
+        &.ico-dot-circle-o:hover
+          color #f28a96
+        &.ico-steam,
+        &.ico-steam:hover,
+        &.ico-cloud,
+        &.ico-cloud:hover
+          cursor pointer
+    &-loader
+      display none
+    &.loading
+      background #a6d850
+    &.loading &
+      &-loader
+        display inline-block
+        &:hover
+          color #fff
+          cursor not-allowed
+      &-right
+        .ico-dot-circle-o,
+        .ico-play
+          display none
+
+.drop
+  opacity .5
+  margin 20px
+  padding 62px 0
+  border 2px solid #8aa0ad
+  color #8aa0ad
+  border-style dashed
+  border-radius 8px
+  line-height 22px
+  font-size 16px
+  text-align center
+  .ico
+    font-size 32px
+  &-done
+    display none
+  &.done &
+    &-tip
+      display none
+    &-done
+      display block
+  &.active
+    opacity 1
+
+.logs
+  position relative
+  font-size 12px
+  line-height 1
+  background #fafbfc
+  color #aaa
+  .green
+    color #a6d850
+  .red
+    color #f28a96
+  .yellow
+    color #FB0
+  .blue
+    color #30b0f2
+  &-cont
+    transition all ease-in-out .3s
+    overflow auto
+    box-sizing border-box
+    margin 0
+    padding 11px 12px
+    position absolute
+    bottom -300px
+    width 100%
+    height 300px
+    background rgba(#000, .8)
+    line-height 19px
+    p
+      display none
+      margin 0
+      word-break break-all
+    &::-webkit-scrollbar
+      width 4px
+      background rgba(0, 0, 0, 0)
+    &::-webkit-scrollbar-track
+      background rgba(0, 0, 0, 0)
+    &::-webkit-scrollbar-track-piece
+      background rgba(0, 0, 0, 0)
+    &::-webkit-scrollbar-thumb
+      background rgba(123, 123, 123, .4)
+  &-cont_sheet
+    margin 0
+    padding 0 12px 0
+    height 32px
+    line-height 32px
+    p
+      margin 0 20px 0 0
+      white-space nowrap
+      overflow hidden
+      text-overflow ellipsis
+  &-btn
+    position absolute
+    bottom 7px
+    right 12px
+    font-size 18px
+    color #b4c7d2
+    &:hover
+      color #FB0
+  &.active &
+    &-cont
+      bottom 0
+      p
+        display block
+    &-cont_sheet
+      visibility hidden
+    &-btn
+      color #FB0
+
+.popup
+  position fixed
+  top 0
+  left 400px
+  width 100%
+  height 100%
+  transition all ease-in-out .3s
+  &--inner
+    width 100%
+    height 100%
+    position relative
+  button
+    color #8aa0ad
+    &:hover
+      color #b4c7d2
+  &-cont
+    animation .5s opc ease-in-out forwards
+    background #fff
+    width 100%
+    height 100%
+    top 0
+    left 0
+    position absolute
+    padding 46px 24px 0
+    box-sizing border-box
+    color #8aa0ad
+    &.app_set
+      z-index 1
+    &.item_set
+      z-index 1
+    &-close
+      position absolute
+      top 24px
+      left 24px
+      font-size 22px
+    &-item
+      margin 20px 0 35px
+      &-title
+        margin 20px 0
+        font-size 18px
+        text-align center
+  &.active-app_set
+    left 0
+    .app_set
+      z-index 2
+      animation .5s block_opc ease-in-out forwards
+  &.active-item_set
+    left 0
+    .item_set
+      z-index 2
+      animation .5s block_opc ease-in-out forwards
+
+.dir_ipt
+  position relative
+  &-path
+    display block
+    width 100%
+    line-height 22px
+    padding 6px 38px 6px 15px
+    font-size 14px
+    color #8aa0ad
+    border 1px solid #8aa0ad
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+    box-sizing border-box
+  &-btn
+    position absolute
+    top 8px
+    right 10px
+    font-size 20px
+  &-ipt
+    display none
+
+.store_data
+  border 1px solid #8aa0ad
+  min-height 218px
+  max-height 360px
+  position relative
+  overflow auto
+  transition all ease .3s
+  &::-webkit-scrollbar
+    width 4px
+    background rgba(0, 0, 0, 0)
+  &::-webkit-scrollbar-track
+    background rgba(0, 0, 0, 0)
+  &::-webkit-scrollbar-track-piece
+    background rgba(0, 0, 0, 0)
+  &::-webkit-scrollbar-thumb
+    background rgba(123, 123, 123, .2)
+  input.store_data-add-ipt-name
+    display none
+  &.active-add &
+    &-add
+      top 0
+  &.active-add.update
+    input.store_data-add-ipt-name
+      display block
+  &.none
+    min-height 96px
+    max-height none
+    overflow hidden
+    font-size 0
+    height 0
+    .store_data-add-ipt-name
+      display none
+    #store_data-close
+      display none
+    .store_data-add
+      top 0
+    &~.store_data-open_add
+      display none
+  &-add
+    padding 9px 15px 15px
+    position absolute
+    background #f2f6f8
+    border 0 solid #8aa0ad
+    border-width 0 0 1px
+    width 100%
+    box-sizing border-box
+    z-index 1
+    top -133px
+    transition all ease-in-out .3s
+    &-ipt
+      width 100%
+      padding 0 35px 0 0
+      box-sizing border-box
+      position relative
+      input
+        display block
+        width 100%
+        line-height 22px
+        border 1px solid #8aa0ad
+        margin 6px 0 0
+        padding 3px 8px
+        font-size 14px
+        color #8aa0ad
+        overflow hidden
+        text-overflow ellipsis
+        white-space nowrap
+      &-btn
+        position absolute
+        top 0
+        right 0
+        .ico
+          font-size 22px
+          display block
+          line-height 29px
+          margin 0 0 6px
+          animation .5s block_opc ease-in-out forwards
+    &-loader
+      width 26px
+      display none
+      animation .5s block_opc ease-in-out forwards
+    .store_data-add-err
+      display none
+      color #f28a96
+    &.loading &
+      &-loader
+        display block
+      &-ipt
+        button
+          display none
+    &.err
+      .store_data-add-err
+        display block
+      .store_data-add-add
+        display none
+  &-item
+    position relative
+    background #fafbfc
+    &:hover &
+      &-btn
+        display block
+    &:nth-child(2n+1)
+      background #f2f6f8
+    &-name
+      display block
+      line-height 36px
+      padding 0 57px 0 15px
+      white-space nowrap
+      overflow hidden
+      text-overflow ellipsis
+    &-btn
+      position absolute
+      right 15px
+      top 9px
+      font-size 0
+      line-height 0
+      display none
+      .ico
+        font-size 17px
+        line-height 1
+        margin 0 0 0 8px
+      &-del
+        &.active:hover
+          color #a6d850
+        &.active::before
+          content '\f058'
+  &-open_add
+    text-align center
+    font-size 0
+    line-height 0
+    margin 8px
+    &-btn
+      font-size 26px
+
+.item_bind
+  .theme_slc
+    display none
+    animation .5s block_opc ease-in-out forwards
+    &.show
+      display block
+
+.item_set-info
+  margin 8px
+  font-size 26px
+  line-height 0
+  text-align center
+  &-yes,
+  &-loader,
+  &-err
+    display none
+    animation .5s block_opc ease-in-out forwards
+    vertical-align middle
+  &-loader
+    width 30px
+    position relative
+    bottom 1px
+  &-err
+    color #f28a96
+  &.err &
+    &-err
+      display inline-block
+  &.loading &
+    &-loader
+      display inline-block
+  &.set &
+    &-yes
+      display inline-block
+
+
+.select
+  margin 0 0 20px
+  position relative
+  overflow hidden
+  background #fafbfc
+  -webkit-user-select none
+  z-index 2
+  &.active
+    overflow visible
+    .options
+      opacity 1
+  .options
+    background #fafbfc
+    transition all ease .2s
+    opacity 0
+    border 0 solid #8aa0ad
+    border-width 0 1px 1px
+    position absolute
+    width 100%
+    box-sizing border-box
+    top 36px
+    left 0
+    z-index 10
+    max-height 106px
+    overflow auto
+    &::-webkit-scrollbar
+      width 4px
+      background rgba(0, 0, 0, 0)
+    &::-webkit-scrollbar-track
+      background rgba(0, 0, 0, 0)
+    &::-webkit-scrollbar-track-piece
+      background rgba(0, 0, 0, 0)
+    &::-webkit-scrollbar-thumb
+      background rgba(123, 123, 123, .2)
+  .option
+    &.disabled
+      color rgba(#8aa0ad, .4)
+    &.selected
+      position relative
+      padding-right 36px
+      &::after
+        content '\f00c'
+        color #a6d850
+        position absolute
+        top 8px
+        right 16px
+        font-size 16px !important
+        display inline-block
+        font normal normal normal 14px/1 icon
+        font-size inherit
+        text-rendering auto
+        -webkit-font-smoothing antialiased
+        -moz-osx-font-smoothing grayscale
+        transform translate(0, 0)
+    &:nth-child(odd)
+      background #f2f6f8
+  .bingo,
+  .option
+    font-size 14px
+    line-height 35px
+    box-sizing border-box
+    padding 0 16px
+    transition all ease .2s
+    white-space nowrap
+    overflow hidden
+    text-overflow ellipsis
+    &:hover
+      background #daedf7
+  .bingo
+    position relative
+    padding-right 36px
+    border 1px solid #8aa0ad
+    line-height 34px
+    &::after
+      content '\f0d7'
+      position absolute
+      top 8px
+      right 16px
+      font-size 20px !important
+      display inline-block
+      font normal normal normal 14px/1 icon
+      font-size inherit
+      text-rendering auto
+      -webkit-font-smoothing antialiased
+      -moz-osx-font-smoothing grayscale
+      transform translate(0, 0)
+
+.theme_slc
+  z-index 1
+
+
+  
