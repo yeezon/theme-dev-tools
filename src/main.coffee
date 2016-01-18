@@ -12,14 +12,14 @@ shell      = require 'shell'
 # require('crash-reporter').start()
 
 # App Require
-path        = require 'path'
-fs          = require 'fs'
-crypto      = require 'crypto'
-request     = require 'request'
-chokidar    = require 'chokidar'
-CSON        = require 'cson'
-mime        = require 'mime'
-bSync       = require('browser-sync').create()
+path     = require 'path'
+fs       = require 'fs'
+crypto   = require 'crypto'
+request  = require 'request'
+chokidar = require 'chokidar'
+CSON     = require 'cson'
+mime     = require 'mime'
+bSync    = require('browser-sync').create()
 
 # Base Set
 CWD           = __dirname
@@ -302,7 +302,7 @@ run =
     secureStorage =
       get: (key, callback) ->
         _mainWin.webContents.session.cookies.get
-          url : 'https://auto.app.youhaosuda.com'
+          url : 'https://theme-dev-tools.app.youhaosuda.com'
           , (err, cookies) ->
             if err
               callback err
@@ -322,8 +322,8 @@ run =
       set: (key, obj, callback) ->
         obj['ver'] = APP_VER
         _mainWin.webContents.session.cookies.set
-          url : 'https://auto.app.youhaosuda.com'
-          name : key
+          url   : 'https://theme-dev-tools.app.youhaosuda.com'
+          name  : key
           value : JSON.stringify obj
           expirationDate: 31104000000
         , (err) ->
@@ -341,6 +341,10 @@ run =
         CSON.load pathHandle(DATA_PATH), (err, data) ->
           return callback err if err
           self.cont = data
+          if data.mode
+            if data.mode.local?.open
+              API_URI   = data.mode.local.api_uri
+              TOKEN_URI = data.mode.local.token_uri
           callback null
       save: (callback) ->
         self = this
@@ -486,13 +490,12 @@ run =
           HASH_DIR     : pathHandle HASH_DIR
           CONF_PATH    : pathHandle CONF_PATH
           DATA_PATH    : pathHandle DATA_PATH
-          API_URI      : pathHandle API_URI
+          API_URI      : API_URI
           SERVICES_PORT: SERVICES_PORT
         _mainWin.webContents.send 'set_ui_data', obj
         obj = null
 
     # Auto Main
-
     # Data
     current =
       cont: null
@@ -512,8 +515,6 @@ run =
       clean: ->
         self = this
         self.cont = null
-
-      
 
     # Var and Settings
     watcher =
@@ -553,12 +554,12 @@ run =
       throttle: (callback) ->
         if current.cont && current.cont.leaky
           if eval(current.cont.leaky) < 1
-            callback null
+            return callback null
           else
-            callback '水桶满了'
+            return callback '请求水桶满了，请稍等...'
 
     # Funtion
-    checksum = (path) ->
+    checkSum = (path) ->
       crypto.createHash('md5').update(fs.readFileSync(path), 'utf8').digest 'hex'
 
     winPathRE = (path) ->
@@ -614,16 +615,18 @@ run =
             else
               oBody = body
             if !err && response.statusCode == 200
-              leaky = response.headers['x-yhsd-shop-api-call-limit']
-              if leaky
+              if leaky = response?.headers?['x-yhsd-shop-api-call-limit']
                 if current.cont && current.cont.leaky
                   current.cont.leaky = leaky
-              callback null, oBody
+              return callback null, oBody
             else
+              if leaky = response?.headers?['x-yhsd-shop-api-call-limit']
+                if current.cont && current.cont.leaky
+                  current.cont.leaky = leaky
               msg = 'GET - 获取数据失败 | HTTP_CODE: ' + response?.statusCode + ' | API_MSG: ' + JSON.stringify oBody
               if err
                 msg = msg + ' | Request_ERROR: ' + err
-              callback msg
+              return callback msg
       post: (api, body, callback) ->
         request.post
           uri : API_URI + api
@@ -635,16 +638,18 @@ run =
             else
               oBody = body
             if !err && response.statusCode == 200
-              leaky = response.headers['x-yhsd-shop-api-call-limit']
-              if leaky
+              if leaky = response?.headers?['x-yhsd-shop-api-call-limit']
                 if current.cont && current.cont.leaky
                   current.cont.leaky = leaky
-              callback null, oBody
+              return callback null, oBody
             else
+              if leaky = response?.headers?['x-yhsd-shop-api-call-limit']
+                if current.cont && current.cont.leaky
+                  current.cont.leaky = leaky
               msg = 'POST - 提交数据失败 | HTTP_CODE: ' + response?.statusCode + ' | API_MSG: ' + JSON.stringify oBody
               if err
                 msg = msg + ' | Request_ERROR: ' + err
-              callback msg
+              return callback msg
       put: (api, body, callback) ->
         request.put
           uri : API_URI + api
@@ -656,23 +661,64 @@ run =
             else
               oBody = body
             if !err && response.statusCode == 200
-              leaky = response.headers['x-yhsd-shop-api-call-limit']
-              if leaky
+              if leaky = response?.headers?['x-yhsd-shop-api-call-limit']
                 if current.cont && current.cont.leaky
                   current.cont.leaky = leaky
-              callback null, oBody
+              return callback null, oBody
             else
+              if leaky = response?.headers?['x-yhsd-shop-api-call-limit']
+                if current.cont && current.cont.leaky
+                  current.cont.leaky = leaky
               msg = 'PUT - 更新数据失败 | HTTP_CODE: ' + response?.statusCode + ' | API_MSG: ' + JSON.stringify oBody
               if err
                 msg = msg + ' | Request_ERROR: ' + err
-              callback msg
+              return callback msg
+      del: (api, callback) ->
+        request.del
+          uri: API_URI + api
+          , (err, response, body) ->
+            if typeof body == 'string'
+              oBody = JSON.parse body
+            else
+              oBody = body
+            if !err && response.statusCode == 200
+              if leaky = response?.headers?['x-yhsd-shop-api-call-limit']
+                if current.cont && current.cont.leaky
+                  current.cont.leaky = leaky
+              return callback null, oBody
+            else
+              if leaky = response?.headers?['x-yhsd-shop-api-call-limit']
+                if current.cont && current.cont.leaky
+                  current.cont.leaky = leaky
+              msg = 'DELETE - 删除数据失败 | HTTP_CODE: ' + response?.statusCode + ' | API_MSG: ' + JSON.stringify oBody
+              if err
+                msg = msg + ' | Request_ERROR: ' + err
+              return callback msg
+      getFile: (uri, callback) ->
+        request.get
+          encoding: null        # binary 数据
+          url: 'http:' + uri    # 不加上会提示 URI 错误
+          , (err, response, body) ->
+            if typeof body == 'string'
+              oBody = JSON.parse body
+            else
+              oBody = body
+            if !err && response.statusCode == 200
+              return callback null, oBody
+            else
+              msg = 'GET - 获取文件失败 | HTTP_CODE: ' + response?.statusCode + ' | API_MSG: ' + JSON.stringify oBody
+              if err
+                msg = msg + ' | Request_ERROR: ' + err
+              return callback msg
       add: (filePath, callback) ->
+        # Name 包含目录名（除结构目录名），例如 system/500.html
+        # dirNm 只是结构目录名
         self  = this
         name  = filePath.replace(new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\]'), '').replace(/^[^\/\\]+[\/\\]/, '')
         dirNm = filePath.replace(new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\]'), '').match(/^[^\/\\]+/)?[0]
         try
           if fs.existsSync(filePath)
-            fileHash = checksum filePath
+            fileHash = checkSum filePath
           else
             err = '添加文件不存在' + ' | FILE_PATH: ' + disPath filePath + ' | ' + e
             return callback err
@@ -683,67 +729,80 @@ run =
           imgRE = new RegExp('.(png|jpg|gif|jpeg|bmp|webp)$')
           binRE = new RegExp('.(svg|ico|eot|woff|ttf|woff2)$')
           api  = '/themes/' + current.cont.themeID + '/assets'
+          # Add 无需删除图片文件后缀名
           body =
             asset:
               key: 'assets/' + path.basename filePath
               value: ''
           if (imgRE.test(filePath) || binRE.test(filePath))
-            fileType = mime.lookup filePath
-            body.asset.value = 'data:' + fileType + ';base64,' + fs.readFileSync(filePath, 'base64')
+            mimeType = mime.lookup filePath
+            body.asset.value = 'data:' + mimeType + ';base64,' + fs.readFileSync(filePath, 'base64')
           else
             body.asset.value = fs.readFileSync(filePath, 'utf8')
-          self.post api, body, (err) ->
+          self.post api, body, (err, _body) ->
             if err
               err = err + ' | FILE_PATH: ' + disPath filePath
               return callback err
             else
-              current.cont.upHash[filePath]        = {}
-              current.cont.upHash[filePath].id     = body.asset.key
-              current.cont.upHash[filePath].hash   = fileHash
-              current.cont.upHash[filePath].custom = true
+              current.cont.upHash[filePath] =
+                id     : _body.asset.key
+                hash   : fileHash
+                custom : _body.asset.type == 'custom'
+                trash  : _body.asset.trash
+                rename : _body.asset.rename
+                version: _body.asset.version
               logs 'Success', '线上添加文件成功'
               bs.reload filePath
               return callback null
         else
           fileType = path.extname filePath
           if fileType != '.html' && fileType != '.json'
-            err = '添加的文件类型不符合要求' + ' | FILE_PATH: ' + disPath filePath
+            err = '添加的文件类型不符合要求' + ' - ' + disPath filePath
             return callback err
           else
+            # if (/config/.test dirNm)
+            #   err = 'Config 目录不允许添加文件' + ' - ' + disPath filePath
+            #   return callback err
             api  = '/themes/' + current.cont.themeID + '/assets'
             body =
               asset:
                 key: dirNm + '/' + name.replace('\\', '/')
                 value: fs.readFileSync(filePath, 'utf8')
-            self.post api, body, (err) ->
+            self.post api, body, (err, _body) ->
               if err
-                err = err + ' | FILE_PATH: ' + disPath filePath
+                err = err + ' | File: ' + disPath filePath
                 return callback err
               else
-                current.cont.upHash[filePath]        = {}
-                current.cont.upHash[filePath].id     = body.asset.key
-                current.cont.upHash[filePath].hash   = fileHash
-                current.cont.upHash[filePath].custom = true
                 logs 'Success', '添加线上文件成功'
+                current.cont.upHash[filePath] =
+                  id     : _body.asset.key
+                  hash   : fileHash
+                  custom : _body.asset.type == 'custom'
+                  trash  : _body.asset.trash
+                  rename : _body.asset.rename
+                  version: _body.asset.version
                 bs.reload filePath
-                return callback(null)
+                return callback null
       update: (filePath, callback) ->
         self = this
         try
-          fileHash = checksum filePath
+          fileHash = checkSum filePath
         catch e
-          err = '计算文件 MD5 失败，文件或许不存在' + ' | FILE_PATH: ' + disPath fileHash + ' | ' + e
+          err = '计算文件 MD5 失败，文件或许不存在' + ' | FILE_PATH: ' + disPath filePath + ' | ' + e
           return callback err
 
         data = current.cont.upHash[filePath]
 
         return callback null if data.hash == fileHash
 
+        # 非自定义文件，跳转到添加文件任务
         if !data.custom
-          self.add filePath, (err) ->
+          return self.add filePath, (err) ->
             return callback err if err
             return callback null
         else
+          # Name 包含目录名（除结构目录名），例如 system/500.html
+          # dirNm 只是结构目录名
           name     = filePath.replace(new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\]'), '').replace(/^[^\/\\]+[\/\\]/, '')
           dirNm    = filePath.replace(new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\]'), '').match(/^[^\/\\]+/)?[0]
           fileType = path.extname filePath
@@ -751,25 +810,34 @@ run =
           binRE    = new RegExp('.(svg|ico|eot|woff|ttf|woff2)$')
 
           if (/assets/.test dirNm)
-            if imgRE.test name
-              name = name.replace imgRE, ''
+            # Update 要删除图片文件后缀名
+            keyName = name
+            if imgRE.test keyName
+              keyName = keyName.replace imgRE, ''
 
             api  = '/themes/' + current.cont.themeID + '/assets'
             body =
               asset:
-                key: 'assets/' + name.replace('\\', '/')
-                value: ''
+                key    : 'assets/' + keyName.replace('\\', '/')
+                value  : ''
+                version: current.cont.upHash[filePath].version
+
             if (imgRE.test(filePath) || binRE.test(filePath))
-              fileType = mime.lookup filePath
-              body.asset.value = 'data:' + fileType + ';base64,' + fs.readFileSync(filePath, 'base64')
+              mimeType = mime.lookup filePath
+              body.asset.value = 'data:' + mimeType + ';base64,' + fs.readFileSync(filePath, 'base64')
             else
               body.asset.value = fs.readFileSync(filePath, 'utf8')
-            self.put api, body, (err) ->
+            self.put api, body, (err, _body) ->
               if err
                 err = err + ' | FILE_PATH: ' + disPath filePath
                 return callback err
               else
-                current.cont.upHash[filePath].hash = fileHash
+                current.cont.upHash[filePath].hash    = fileHash
+                current.cont.upHash[filePath].custom  = _body.asset.type == 'custom'
+                current.cont.upHash[filePath].trash   = _body.asset.trash
+                current.cont.upHash[filePath].rename  = _body.asset.rename
+                current.cont.upHash[filePath].version = _body.asset.version
+
                 logs 'Success', '更新线上文件成功'
                 bs.reload filePath
                 return callback null
@@ -781,18 +849,147 @@ run =
               api  = '/themes/' + current.cont.themeID + '/assets'
               body =
                 asset:
-                  key: dirNm + '/' + name.replace('\\', '/')
-                  value: fs.readFileSync(filePath, 'utf8')
-              self.put api, body, (err) ->
+                  key    : dirNm + '/' + name.replace('\\', '/')
+                  value  : fs.readFileSync(filePath, 'utf8')
+                  version: current.cont.upHash[filePath].version
+
+              self.put api, body, (err, _body) ->
                 if err
                   err = err + ' | FILE_PATH: ' + disPath filePath
                   return callback err
                 else
-                  current.cont.upHash[filePath].hash = fileHash
+                  current.cont.upHash[filePath].hash    = fileHash
+                  current.cont.upHash[filePath].custom  = _body.asset.type == 'custom'
+                  current.cont.upHash[filePath].trash   = _body.asset.trash
+                  current.cont.upHash[filePath].rename  = _body.asset.rename
+                  current.cont.upHash[filePath].version = _body.asset.version
+
                   logs 'Success', '更新线上文件成功'
                   bs.reload filePath
                   return callback(null)
+      remove: (filePath, callback) ->
+        self = this
 
+        data = current.cont.upHash[filePath]
+
+        if !data.trash
+          logs 'Warning', '文件不允许删除，将重新下载'
+          self.down filePath, (err) ->
+            return callback err if err
+            return callback null
+        else
+          # Name 包含目录名（除结构目录名），例如 system/500.html
+          # dirNm 只是结构目录名
+          name  = filePath.replace(new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\]'), '').replace(/^[^\/\\]+[\/\\]/, '')
+          dirNm = filePath.replace(new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\]'), '').match(/^[^\/\\]+/)?[0]
+          api   = '/themes/' + current.cont.themeID + '/assets?asset[key]=' + dirNm + '/' + name.replace('\\', '/')
+          imgRE = new RegExp('.(png|jpg|gif|jpeg|bmp|webp)$')
+
+          # 去除图片文件扩展名
+          if (/assets/.test dirNm)
+            if imgRE.test(filePath)
+              api = api.replace imgRE, ''
+
+          self.del api, (err) ->
+            if err
+              err = err + ' | FILE_PATH: ' + disPath filePath
+              return callback err
+            else
+              delete current.cont.upHash[filePath]
+              logs 'Success', '删除线上文件成功'
+              bs.reload filePath
+              return callback(null)
+      down: (filePath, callback) ->
+        # Name 包含目录名（除结构目录名），例如 system/500.html
+        # dirNm 只是结构目录名
+        self  = this
+        name  = filePath.replace(new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\]'), '').replace(/^[^\/\\]+[\/\\]/, '')
+        dirNm = filePath.replace(new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\]'), '').match(/^[^\/\\]+/)?[0]
+        imgRE = new RegExp('.(png|jpg|gif|jpeg|bmp|webp)$')
+        binRE = new RegExp('.(svg|ico|eot|woff|ttf|woff2)$')
+
+        # 删除图片文件后缀名
+        keyName = name
+        if imgRE.test keyName
+          keyName = keyName.replace imgRE, ''
+
+        api = '/themes/' + current.cont.themeID + '/assets?asset[key]=' + dirNm + '/' + keyName.replace('\\', '/')
+
+        self.get api, (err, body) ->
+          if err
+            return callback err
+          else
+            downHandle = ->
+              fileHash = ''
+              try
+                fileHash = checkSum filePath
+              catch e
+                err = '计算下载文件 MD5 失败' + ' - ' + disPath filePath + ' | ' + e
+                logs 'Warning', err
+
+              current.cont.upHash[filePath].hash    = fileHash
+              current.cont.upHash[filePath].custom  = body.asset.type == 'custom'
+              current.cont.upHash[filePath].trash   = body.asset.trash
+              current.cont.upHash[filePath].rename  = body.asset.rename
+              current.cont.upHash[filePath].version = body.asset.version
+
+              logs 'Success', '下载文件成功' + ' - ' + disPath filePath
+              return callback null
+
+            # 下载处理
+            try
+              # 创建目录
+              if !fs.existsSync(path.dirname filePath)
+                mkdirs_Sync = (dirPath) ->
+                  dirPath = path.resolve dirPath
+                  if !fs.existsSync(dirPath)
+                    try
+                      fs.mkdirSync dirPath
+                    catch e
+                      switch e.code
+                        when 'ENOENT'
+                          mkdirs_Sync path.dirname(dirPath)
+                          mkdirs_Sync dirPath
+                        when 'EEXIST'
+                          break
+                        else
+                          throw e
+                try
+                  mkdirs_Sync(path.dirname filePath)
+                  logs 'Success', '创建文件夹成功 - ' + disPath(path.dirname filePath)
+                catch e
+                  err = '下载文件失败，文件夹创建出错 | ' + e
+                  logs 'Warning', err
+                  return callback err
+
+              # 创建文件
+              if (/assets/.test dirNm)
+                if (imgRE.test(filePath) || binRE.test(filePath))
+                  # 下载程序
+                  if body.asset.public_url
+                    self.getFile body.asset.public_url, (err, binBody) ->
+                      if err
+                        return callback err
+                      else
+                        # 有空最好判断下文件类型
+                        # 重置图片后缀，防止重复名称的图片
+                        filePath = filePath.replace(path.basename(filePath), '') + body.asset.name
+                        fs.writeFileSync filePath, binBody, 'binary'
+                        do downHandle
+                  else
+                    err = '下载文件失败，文件 URI 为空 - ' + disPath filePath
+                    logs 'Warning', err
+                    return callback err
+                else
+                  fs.writeFileSync filePath, body.asset.value, 'utf8'
+                  do downHandle
+              else
+                fs.writeFileSync filePath, body.asset.value, 'utf8'
+                do downHandle
+            catch e
+              err = '下载文件失败' + ' | ' + e
+              logs 'Warning', err
+              return callback err
       getFileList: (callback) ->
         self = this
         api  = '/themes/' + current.cont.themeID + '/assets'
@@ -800,17 +997,22 @@ run =
           if err
             return callback err
           else
-            themeDir = current.cont.themeDir
-            olFiles = {}
-            for key, item of body.assets
+            olFiles  = {}
+            assetsRE = new RegExp('^assets')
+            imgRE    = new RegExp('.(png|jpg|gif|jpeg|bmp|webp)$')
+            for item in body.assets
               if typeof item == 'object'
-                if item.type == 'custom'
-                  custom = true
-                else
-                  custom = false
+                if assetsRE.test(item.key) && imgRE.test(item.name)
+                  item.key = item.key + item.name?.match(/\.[^\.]+$/)[0]
                 olFiles[path.resolve(current.cont.themeDir + '/' + item.key)] =
-                  id: item.key
-                  custom: custom
+                  id     : item.key
+                  hash   : ''
+                  custom : item.type == 'custom'
+                  trash  : item.trash
+                  rename : item.rename
+                  version: item.version
+                  # updated_at: item.updated_at    # 已有
+                  # hash  : ''    # 无需
             return callback(null, olFiles)
 
       runQueue: (queue, callback) ->
@@ -823,7 +1025,15 @@ run =
           return self.update queue.path, (err) ->
             return callback err if err
             return callback null
-        return callback '列队处理类型错误' + ' | Type: ' + queue.type + ' | FILE_PATH: ' + queue.path
+        if queue.type == 'down'
+          return self.down queue.path, (err) ->
+            return callback err if err
+            return callback null
+        if queue.type == 'remove'
+          return self.remove queue.path, (err) ->
+            return callback err if err
+            return callback null
+        return callback '列队处理类型错误' + ' | Type: ' + queue.type + ' | File: ' + disPath queue.path
 
     file =
       getListHandle: (dir) ->
@@ -852,35 +1062,38 @@ run =
         else
           return callback null, fileList
 
-      getUpHash: (olFiles, callback) ->
+      getUpHash: (oOlFiles, callback) ->
         self = this
         self.getList (err, fileList) ->
           return callback err if err
-          upHash     = current.cont.upHash
-          themeDir   = current.cont.themeDir
-          assetsRE   = new RegExp(winPathRE(themeDir) + '[\\/\\\\]assets')
-          tplRE      = new RegExp(winPathRE(themeDir) + '[\\/\\\\]templates')
-          snippetsRE = new RegExp(winPathRE(themeDir) + '[\\/\\\\]snippets')
-          layoutRE   = new RegExp(winPathRE(themeDir) + '[\\/\\\\]layout')
-          configRE   = new RegExp(winPathRE(themeDir) + '[\\/\\\\]config')
-          imgRE      = new RegExp('.(png|jpg|gif|jpeg|bmp|webp)$')
+          upHash = current.cont.upHash
+          dirRE  = new RegExp(winPathRE(current.cont.themeDir) + '[\\/\\\\][assets|templates|snippets|layout|config]')
+          # 处理本地文件
+          # ID 用文件绝对路径，不要用 Key 的相对路径，减少用户的不正规操作造成线上主题显示错误，影响营业
           try
-            for item in fileList
-              if assetsRE.test(item) && imgRE.test(item)
-                upHash[item] =
-                  hash  : checksum(item)
-                  id    : olFiles[item.replace(imgRE, '')]?.id
-                  custom: olFiles[item.replace(imgRE, '')]?.custom
-              else
-                if assetsRE.test(item) || tplRE.test(item) || snippetsRE.test(item) || layoutRE.test(item) || configRE.test(item)
-                  upHash[item] =
-                    hash  : checksum(item)
-                    id    : olFiles[item]?.id
-                    custom: olFiles[item]?.custom
+            for offlItem in fileList
+              if dirRE.test(offlItem)
+                fileHash = checkSum offlItem
+                upHash[offlItem] =
+                  id     : oOlFiles[offlItem]?.id      || ''
+                  hash   : fileHash                    || ''
+                  custom : oOlFiles[offlItem]?.custom  || false
+                  trash  : oOlFiles[offlItem]?.trash   || false
+                  rename : oOlFiles[offlItem]?.rename  || false
+                  version: oOlFiles[offlItem]?.version || null
           catch e
             return callback '计算文件 Hash 出错' + ' | ' + e
-          item = null
-          callback null, upHash
+          # 处理线上文件
+          for _key, _item of oOlFiles
+            unless upHash[_key]
+              upHash[_key] =
+                id     : oOlFiles[_key]?.id      || ''
+                hash   : ''
+                custom : oOlFiles[_key]?.custom  || false
+                trash  : oOlFiles[_key]?.trash   || false
+                rename : oOlFiles[_key]?.rename  || false
+                version: oOlFiles[_key]?.version || null
+          return callback null, upHash
 
       getBakHash: (callback) ->
         bakPath = path.resolve(pathHandle(HASH_DIR) + '/' + current.cont.themeID + '.bak')
@@ -894,7 +1107,7 @@ run =
                 return callback '解析 JSON 错误，BakHash 内容格式无效' + ' | ' + e
               if bakHash
                 logs 'Success', '读取 BakHash 文件成功'
-                return callback(null, bakHash)
+                return callback null, bakHash
         catch e
           return callback '读取 BakHash 文件出错' + ' | ' + e
         callback  'BakHash 文件不存在或内容为空'
@@ -911,31 +1124,36 @@ run =
           logs 'Warning', err
           return callback err
         logs 'Success', '备份数据成功'
-        callback null
+        return callback null
       watch:
         run: (callback) ->
           logs 'Success', 'Watching... ' + current.cont.themeDir
-          check = (path) ->
-            if data = current.cont.upHash[path]
-              try
-                hash = checksum path
-              catch e
-                logs 'Warning', '计算文件 Hash 出错' + ' | ' + e
-                return
-              if data.hash != hash
-                if data.id
+          checkSet = (path, type) ->
+            if type == 'add' || type == 'change'
+              if data = current.cont.upHash[path]
+                try
+                  hash = checkSum path
+                catch e
+                  logs 'Warning', '计算文件 Hash 出错' + ' | ' + e
+                  return
+                if data.hash != hash
+                  logs 'Info', 'Watcher Changed - ' + disPath path
                   auto.queue.add 'update', path
-                else
-                  auto.queue.add 'add', path
+              else
+                logs 'Info', 'Watcher Added - ' + disPath path
+                auto.queue.add 'add', path
             else
-              auto.queue.add 'add', path
+              if type == 'unlink' && current.cont.upHash[path]
+                logs 'Info', 'Watcher Removed - ' + disPath path
+                auto.queue.add 'remove', path
+
           watcher.run()
           watcher.watch.on 'add', (path) ->
-            logs 'Info', 'Watcher Create - ' + path
-            check(path)
+            checkSet(path, 'add')
           watcher.watch.on 'change', (path) ->
-            logs 'Info', 'Watcher Change - ' + path
-            check(path)
+            checkSet(path, 'change')
+          watcher.watch.on 'unlink', (path) ->
+            checkSet(path, 'unlink')
           callback null
         close: ->
           watcher.close()
@@ -977,7 +1195,7 @@ run =
                   else
                     return setTimeout outFn, 500
         add: (type, path) ->
-          logs 'Info', 'Queue Add ' + type + ' - ' + path
+          logs 'Info', 'Queue - ' + type + ' - ' + path
           current.cont.queue.push
             type: type,
             path: path
@@ -1008,14 +1226,55 @@ run =
                     logs 'Warning', err
                     bakHash = {}
                   for name, item of upHash
+                    # 有 ID 说明 线上存在该文件
                     if item.id
-                      if bakHash[name]
-                        if item.hash != bakHash[name].hash
-                          current.cont.upHash[name].hash = null
+                      # 有 Hash 说明，线下存在该文件
+                      if item.hash
+                        # BakHash 文件存在该文件信息才会保留是否自定义状态，否则弹对话框选择是否备份当前文件然后强制更新线上文件
+                        # 有空写个强制更新线上文件选择
+                        if bakHash[name]
+                          # 版本相同，说明线上文件没有修改过
+                          if item.version == bakHash[name].version
+                            if item.hash == bakHash[name].hash
+                              # 文件无需更新
+                              continue
+                            else
+                              # 设置 upHash 里该文件的应该与 bakHash 里该文件的值相同，防止 Update 操作失败时，下次不是进入到这里，因为 Update 操作失败时，不会操作 upHash
+                              current.cont.upHash[name].hash    = bakHash[name].hash
+                              current.cont.upHash[name].custom  = bakHash[name].custom
+                              current.cont.upHash[name].trash   = bakHash[name].trash
+                              current.cont.upHash[name].rename  = bakHash[name].rename
+                              current.cont.upHash[name].version = bakHash[name].version
+
+                              # 用户自己操作过文件，但不清楚是否是用户真正需要的数据（用旧文件替换了），有时间再写兼容此场景的代码（弹对话框提示选择？）
+                              # 暂时默认是更新
+
+                              self.queue.add 'update', name
+                          else
+                            # Hash 相同，说明线下文件没有修改过
+
+                            # 设置 upHash 里该文件的应该与 bakHash 里该文件的值相同，防止 Update 操作失败时，下次不是进入到这里，因为 Update 操作失败时，不会操作 upHash
+                            current.cont.upHash[name].custom  = bakHash[name].custom
+                            current.cont.upHash[name].trash   = bakHash[name].trash
+                            current.cont.upHash[name].rename  = bakHash[name].rename
+                            current.cont.upHash[name].version = bakHash[name].version
+                            # 下面判断后才需还原 Hash
+
+                            if item.hash == bakHash[name].hash
+                              logs 'Warning', '线上有修改过该文件，请备份并删除该文件，然后重新运行程序，会自动下载该文件最新版本，请在此最新文件上做修改 - ' + disPath name
+                            else
+                              # 需还原 Hash
+                              current.cont.upHash[name].hash = bakHash[name].hash
+                              logs 'Warning', '线上和线下都有修改过该文件，请备份并删除该文件，然后重新运行程序，会自动下载该文件最新版本，请在此最新文件上做修改 - ' + disPath name
+                        else
+                          # 有空在写弹对话框是是否备份当前文件然后强制更新线上文件
+                          # 暂时默认是强制更新线上文件
+
+                          # 更新文件前会再次获取文件 Hash 做判断来减少重复更新，也因为 Update 操作失败时，不会操作 hash 为 ''，所以要设置 ''，引导该文件在程序下次启动时会进入 Update 状态
+                          current.cont.upHash[name].hash = ''
                           self.queue.add 'update', name
                       else
-                        current.cont.upHash[name].hash = null
-                        self.queue.add 'update', name
+                        self.queue.add 'down', name
                     else
                       self.queue.add 'add', name
                   file.watch.run (err) ->
