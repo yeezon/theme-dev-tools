@@ -1,8 +1,10 @@
 # 友好速搭主题开发工具
 
-[使用教程](https://docs.youhaosuda.com/development/s/54815214e2931e38ae000016 '友好速搭 - 主题开发工具')
+## 如何使用
 
-### 界面展示
+工具下载和使用教程 - [Link](https://docs.youhaosuda.com/development/s/54815214e2931e38ae000016)
+
+## 界面展示
 
 添加店铺数据
 
