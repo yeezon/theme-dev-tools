@@ -34,6 +34,8 @@ UI_URI        = 'file://' + path.join CWD, 'index.html'
 # UI_URI        = 'http://localhost:8181/index.html'
 API_URI       = 'https://api.youhaosuda.com/v1'
 TOKEN_URI     = 'https://apps.youhaosuda.com/oauth2/token'
+SECURE_PATH   = './secure.cson'
+LEGACY_STORAGE_URL = 'https://theme-dev-tools.app.youhaosuda.com'
 IGNORE_SUFFIX = 'DS_Store'    # 用 | 分隔文件后缀，例如："one|two|three"
 IGNORE_DIR    = '.svn'        # 用 | 分隔文件夹名称，例如："one|two|three"
 SERVICES_PORT = 8186
@@ -46,6 +48,7 @@ requestOpt =
   pool:
     maxSockets: 1
     keepAlive: true
+  ca: fs.readFileSync(path.join(__dirname, 'isrgrootx1.pem'))
 request    = request.defaults requestOpt
 requestJar = do request.jar
 
@@ -300,37 +303,66 @@ run =
     ## Secret 处理
     ## Key = Domain
     secureStorage =
-      get: (key, callback) ->
-        _mainWin.webContents.session.cookies.get
-          url : 'https://theme-dev-tools.app.youhaosuda.com'
-          , (err, cookies) ->
-            if err
-              callback err
-            else
-              result = null
-              for ck in cookies
-                if ck.name == key
-                  result = ck
-                  break
-              if !result
-                callback '获取 Cookie 数据为空'
-                return
-              if !result.value
-                callback '获取 Cookie 数据为空'
-                return
-              callback null, JSON.parse(result.value)
-      set: (key, obj, callback) ->
-        obj['ver'] = APP_VER
-        _mainWin.webContents.session.cookies.set
-          url   : 'https://theme-dev-tools.app.youhaosuda.com'
-          name  : key
-          value : JSON.stringify obj
-          expirationDate: 31104000000
-        , (err) ->
-          if err
-            callback err
-          else
+      cont: null
+      init: (callback) ->
+        self = this
+        if fs.existsSync pathHandle(SECURE_PATH)
+          CSON.load pathHandle(SECURE_PATH), (err, data) ->
+            return callback err if err
+            self.cont = data or {}
+            self.cont.ver ?= APP_VER
+            self.cont.stores ?= {}
             callback null
+        else
+          self.cont =
+            ver   : APP_VER
+            stores: {}
+          session = _mainWin?.webContents?.session
+          if !session
+            self.save callback
+            return
+          session.cookies.get
+            url: LEGACY_STORAGE_URL
+          , (err, cookies) ->
+            return callback err if err
+            for ck in cookies when ck?.name and ck?.value
+              try
+                self.cont.stores[ck.name] = JSON.parse ck.value
+              catch e
+                return callback '读取旧版存储失败 - ' + e
+            self.save callback
+      save: (callback) ->
+        self = this
+        try
+          self.cont ?=
+            ver   : APP_VER
+            stores: {}
+          self.cont.stores ?= {}
+          fs.writeFileSync pathHandle(SECURE_PATH), CSON.stringify self.cont
+          callback null
+        catch e
+          callback e
+      get: (key, callback) ->
+        if !this.cont?.stores
+          callback '存储未初始化'
+          return
+        result = this.cont.stores[key]
+        if !result
+          callback '获取存储数据为空'
+          return
+        callback null, result
+      set: (key, obj, callback) ->
+        self = this
+        self.cont ?=
+          ver   : APP_VER
+          stores: {}
+        self.cont.stores ?= {}
+        if !obj or Object.keys(obj).length == 0
+          delete self.cont.stores[key]
+        else
+          obj['ver'] = APP_VER
+          self.cont.stores[key] = obj
+        self.save callback
 
     # 对象
     # AutoData 对象
@@ -1439,14 +1471,19 @@ run =
     # _mainWin 完成加载时，发送事件给 _mainWin
     _mainWin.webContents.on 'did-finish-load', ->
 
-      # 加载 App 数据
-      autoData.init (err) ->
+      # 加载本地存储和 App 数据
+      secureStorage.init (err) ->
         if err
           _mLog err
-          logs 'Error', '读取 AutoData 数据失败 Error: ' + err
+          logs 'Error', '初始化本地存储失败 Error: ' + err
           return
-        logs 'Info', '初始化数据成功'
-        _mainWin.webContents.send 'Success', 'init_data'
+        autoData.init (err) ->
+          if err
+            _mLog err
+            logs 'Error', '读取 AutoData 数据失败 Error: ' + err
+            return
+          logs 'Info', '初始化数据成功'
+          _mainWin.webContents.send 'Success', 'init_data'
 
 # 事件
 ## 绑定关闭所有窗口事件
