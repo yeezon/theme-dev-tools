@@ -13,6 +13,7 @@ shell      = require 'shell'
 
 # App Require
 path     = require 'path'
+nodeUrl  = require 'url'
 fs       = require 'fs'
 crypto   = require 'crypto'
 request  = require 'request'
@@ -610,6 +611,20 @@ run =
           else
             self.setToken data.token
             callback null
+      refreshRefererDomain: (callback) ->
+        self = this
+        self.get '/shop', (err, data) ->
+          return callback err if err
+          if !data?.shop?.domain
+            return callback '获取店铺 domain 失败'
+          current.cont.shopDomain = data.shop.domain
+          logs 'Info', '更新店铺 domain 成功 - ' + current.cont.shopDomain
+          callback null
+      getReferer: ->
+        domain = current?.cont?.shopDomain || current?.cont?.storeURI
+        return null if !domain
+        domain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '')
+        return 'https://' + domain
       setToken: (token) ->
         requestOpt['headers'] =
           'X-API-ACCESS-TOKEN': token
@@ -727,10 +742,18 @@ run =
                 msg = msg + ' | Request_ERROR: ' + err
               return callback msg
       getFile: (uri, callback) ->
-        request.get
+        fileURL = uri
+        if !/^https?:\/\//.test fileURL
+          fileURL = 'http:' + uri    # 不加上会提示 URI 错误
+        getOpt =
           encoding: null        # binary 数据
-          url: 'http:' + uri    # 不加上会提示 URI 错误
-          , (err, response, body) ->
+          url: fileURL
+        if /asset\.ibanquan\.com/i.test nodeUrl.parse(fileURL).host
+          referer = this.getReferer()
+          if referer
+            getOpt['headers'] =
+              Referer: referer
+        request.get getOpt, (err, response, body) ->
             if typeof body == 'string'
               oBody = JSON.parse body
             else
@@ -1245,70 +1268,73 @@ run =
             return callback err if err
             logs 'Info', '登陆成功'
 
-            rqs.getFileList (err, olFiles) ->
+            rqs.refreshRefererDomain (err) ->
               return callback err if err
-              logs 'Info', '获取线上文件列表成功'
 
-              file.getUpHash olFiles, (err, upHash) ->
+              rqs.getFileList (err, olFiles) ->
                 return callback err if err
-                logs 'Info', '合并文件列表成功'
+                logs 'Info', '获取线上文件列表成功'
 
-                file.getBakHash (err, bakHash) ->
-                  if err
-                    logs 'Warning', err
-                    bakHash = {}
-                  for name, item of upHash
-                    # 有 ID 说明 线上存在该文件
-                    if item.id
-                      # 有 Hash 说明，线下存在该文件
-                      if item.hash
-                        # BakHash 文件存在该文件信息才会保留是否自定义状态，否则弹对话框选择是否备份当前文件然后强制更新线上文件
-                        # 有空写个强制更新线上文件选择
-                        if bakHash[name]
-                          # 版本相同，说明线上文件没有修改过
-                          if item.version == bakHash[name].version
-                            if item.hash == bakHash[name].hash
-                              # 文件无需更新
-                              continue
+                file.getUpHash olFiles, (err, upHash) ->
+                  return callback err if err
+                  logs 'Info', '合并文件列表成功'
+
+                  file.getBakHash (err, bakHash) ->
+                    if err
+                      logs 'Warning', err
+                      bakHash = {}
+                    for name, item of upHash
+                      # 有 ID 说明 线上存在该文件
+                      if item.id
+                        # 有 Hash 说明，线下存在该文件
+                        if item.hash
+                          # BakHash 文件存在该文件信息才会保留是否自定义状态，否则弹对话框选择是否备份当前文件然后强制更新线上文件
+                          # 有空写个强制更新线上文件选择
+                          if bakHash[name]
+                            # 版本相同，说明线上文件没有修改过
+                            if item.version == bakHash[name].version
+                              if item.hash == bakHash[name].hash
+                                # 文件无需更新
+                                continue
+                              else
+                                # 设置 upHash 里该文件的应该与 bakHash 里该文件的值相同，防止 Update 操作失败时，下次不是进入到这里，因为 Update 操作失败时，不会操作 upHash
+                                current.cont.upHash[name].hash    = bakHash[name].hash
+                                current.cont.upHash[name].custom  = bakHash[name].custom
+                                current.cont.upHash[name].trash   = bakHash[name].trash
+                                current.cont.upHash[name].rename  = bakHash[name].rename
+                                current.cont.upHash[name].version = bakHash[name].version
+
+                                # 用户自己操作过文件，但不清楚是否是用户真正需要的数据（用旧文件替换了），有时间再写兼容此场景的代码（弹对话框提示选择？）
+                                # 暂时默认是更新
+
+                                self.queue.add 'update', name
                             else
+                              # Hash 相同，说明线下文件没有修改过
+
                               # 设置 upHash 里该文件的应该与 bakHash 里该文件的值相同，防止 Update 操作失败时，下次不是进入到这里，因为 Update 操作失败时，不会操作 upHash
-                              current.cont.upHash[name].hash    = bakHash[name].hash
                               current.cont.upHash[name].custom  = bakHash[name].custom
                               current.cont.upHash[name].trash   = bakHash[name].trash
                               current.cont.upHash[name].rename  = bakHash[name].rename
                               current.cont.upHash[name].version = bakHash[name].version
+                              # 下面判断后才需还原 Hash
 
-                              # 用户自己操作过文件，但不清楚是否是用户真正需要的数据（用旧文件替换了），有时间再写兼容此场景的代码（弹对话框提示选择？）
-                              # 暂时默认是更新
-
-                              self.queue.add 'update', name
+                              if item.hash == bakHash[name].hash
+                                logs 'Warning', '线上有修改过该文件，请备份并删除该文件，然后重新运行程序，会自动下载该文件最新版本，请在此最新文件上做修改 - ' + disPath name
+                              else
+                                # 需还原 Hash
+                                current.cont.upHash[name].hash = bakHash[name].hash
+                                logs 'Warning', '线上和线下都有修改过该文件，请备份并删除该文件，然后重新运行程序，会自动下载该文件最新版本，请在此最新文件上做修改 - ' + disPath name
                           else
-                            # Hash 相同，说明线下文件没有修改过
+                            # 有空在写弹对话框是是否备份当前文件然后强制更新线上文件
+                            # 暂时默认是强制更新线上文件
 
-                            # 设置 upHash 里该文件的应该与 bakHash 里该文件的值相同，防止 Update 操作失败时，下次不是进入到这里，因为 Update 操作失败时，不会操作 upHash
-                            current.cont.upHash[name].custom  = bakHash[name].custom
-                            current.cont.upHash[name].trash   = bakHash[name].trash
-                            current.cont.upHash[name].rename  = bakHash[name].rename
-                            current.cont.upHash[name].version = bakHash[name].version
-                            # 下面判断后才需还原 Hash
-
-                            if item.hash == bakHash[name].hash
-                              logs 'Warning', '线上有修改过该文件，请备份并删除该文件，然后重新运行程序，会自动下载该文件最新版本，请在此最新文件上做修改 - ' + disPath name
-                            else
-                              # 需还原 Hash
-                              current.cont.upHash[name].hash = bakHash[name].hash
-                              logs 'Warning', '线上和线下都有修改过该文件，请备份并删除该文件，然后重新运行程序，会自动下载该文件最新版本，请在此最新文件上做修改 - ' + disPath name
+                            # 更新文件前会再次获取文件 Hash 做判断来减少重复更新，也因为 Update 操作失败时，不会操作 hash 为 ''，所以要设置 ''，引导该文件在程序下次启动时会进入 Update 状态
+                            current.cont.upHash[name].hash = ''
+                            self.queue.add 'update', name
                         else
-                          # 有空在写弹对话框是是否备份当前文件然后强制更新线上文件
-                          # 暂时默认是强制更新线上文件
-
-                          # 更新文件前会再次获取文件 Hash 做判断来减少重复更新，也因为 Update 操作失败时，不会操作 hash 为 ''，所以要设置 ''，引导该文件在程序下次启动时会进入 Update 状态
-                          current.cont.upHash[name].hash = ''
-                          self.queue.add 'update', name
+                          self.queue.add 'down', name
                       else
-                        self.queue.add 'down', name
-                    else
-                      self.queue.add 'add', name
+                        self.queue.add 'add', name
                   file.watch.run (err) ->
                     logs 'Warning', err if err
                     bs.run ->
